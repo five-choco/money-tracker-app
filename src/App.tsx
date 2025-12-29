@@ -19,7 +19,7 @@ function App() {
 
   return (
     <div style={{ padding: "20px", textAlign: "center" }}>
-      <h1>経費管理カレンダー (TS版)</h1>
+      <h1>経費管理カレンダー</h1>
 
       <div
         style={{ display: "flex", justifyContent: "center", margin: "20px 0" }}
