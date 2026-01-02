@@ -9,11 +9,11 @@ import { supabase } from "./supabaseClient.ts";
 // dayjsを日本語設定に
 dayjs.locale("ja");
 
-// ライブラリの複雑な型に対応
+// 型定義
 type CalendarValue = Date | null | [Date | null, Date | null];
 
 interface FormData {
-  amount: number;
+  amount: number | "";
   shop_name: string;
   category: string;
 }
@@ -22,28 +22,46 @@ function App() {
   // --- ステート管理 ---
   const [date, setDate] = useState<CalendarValue>(new Date());
   const [loading, setLoading] = useState(false);
-  const [expenses, setExpenses] = useState<any[]>([]); // 取得した全データ
+  const [expenses, setExpenses] = useState<any[]>([]);
   const [formData, setFormData] = useState<FormData>({
-    amount: 0,
+    amount: "",
     shop_name: "",
     category: "食費",
   });
 
-  // 選択中の日付を文字列（YYYY-MM-DD）で取得する便利変数
+  // 選択中の日付文字列
   const selectedDateStr = dayjs(
     Array.isArray(date) ? date[0] : (date as Date)
   ).format("YYYY-MM-DD");
 
-  // --- 1. 起動時に匿名ログイン & データ取得 ---
+  // --- 1. 起動時・ログイン状態監視ロジック ---
   useEffect(() => {
-    const initApp = async () => {
-      // ログイン
-      const { error } = await supabase.auth.signInAnonymously();
-      if (error) console.error("ログインエラー:", error.message);
-      // データ取得
-      fetchExpenses();
+    // ログイン状態の変化を監視（リロード時もこれでデータ取得が走る）
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session) {
+          fetchExpenses();
+        }
+      }
+    );
+
+    const initSignIn = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        const { error } = await supabase.auth.signInAnonymously();
+        if (error) console.error("ログインエラー:", error.message);
+      } else {
+        fetchExpenses(); // すでにセッションがあれば取得
+      }
     };
-    initApp();
+
+    initSignIn();
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   // --- 2. データを取得する関数 ---
@@ -57,7 +75,7 @@ function App() {
       .from("expenses")
       .select("*")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("date", { ascending: false });
 
     if (error) {
       console.error("データ取得エラー:", error);
@@ -74,36 +92,26 @@ function App() {
     setLoading(true);
     try {
       const result = await analyzeReceipt(file);
-
       setFormData({
-        amount: result.amount || 0,
+        amount: result.amount || "",
         shop_name: result.shop_name || "",
         category: result.category || "食費",
       });
-
-      if (result.date) {
-        setDate(new Date(result.date));
-      }
-
+      if (result.date) setDate(new Date(result.date));
       alert("AIによる解析が成功しました！");
     } catch (error) {
       console.error(error);
-      alert("解析に失敗しました。画像が鮮明か確認してください。");
+      alert("解析に失敗しました。");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- 4. Supabase保存ハンドラー ---
+  // --- 4. 保存ハンドラー ---
   const handleSave = async () => {
     const targetDate = Array.isArray(date) ? date[0] : date;
-
-    if (!targetDate) {
-      alert("日付を選択してください。");
-      return;
-    }
-    if (formData.amount <= 0) {
-      alert("金額を入力してください。");
+    if (!targetDate || formData.amount === "" || formData.amount <= 0) {
+      alert("日付と金額を正しく入力してください。");
       return;
     }
 
@@ -125,14 +133,9 @@ function App() {
       ]);
 
       if (error) throw error;
-
-      alert("データベースに保存しました！");
-
-      // 保存後にデータを再取得してドットを更新
-      fetchExpenses();
-
-      // フォームをクリア
-      setFormData({ amount: 0, shop_name: "", category: "食費" });
+      alert("保存しました！");
+      fetchExpenses(); // リストとドットを更新
+      setFormData({ amount: "", shop_name: "", category: "食費" });
     } catch (error: any) {
       alert("保存エラー: " + error.message);
     } finally {
@@ -140,7 +143,6 @@ function App() {
     }
   };
 
-  // --- UI表示 ---
   return (
     <div
       style={{
@@ -163,7 +165,7 @@ function App() {
         </h1>
       </header>
 
-      {/* カレンダーセクション */}
+      {/* カレンダー */}
       <section
         style={{
           display: "flex",
@@ -196,7 +198,7 @@ function App() {
         />
       </section>
 
-      {/* フォームセクション */}
+      {/* 入力フォーム */}
       <section
         style={{
           background: "#f9f9f9",
@@ -207,29 +209,16 @@ function App() {
         }}
       >
         <h2 style={{ fontSize: "1.1rem", marginTop: 0 }}>経費を入力</h2>
-        <div style={{ marginBottom: "15px" }}>
-          <label
-            style={{
-              display: "block",
-              fontSize: "0.8rem",
-              marginBottom: "5px",
-            }}
-          >
-            領収書をスキャン:
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            disabled={loading}
-            style={{ width: "100%" }}
-          />
-          {loading && (
-            <p style={{ color: "#007bff", fontSize: "0.9rem" }}>
-              ✨ AIが解析中...
-            </p>
-          )}
-        </div>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          disabled={loading}
+          style={{ width: "100%", marginBottom: "15px" }}
+        />
+        {loading && (
+          <p style={{ color: "#007bff", fontSize: "0.9rem" }}>✨ AI解析中...</p>
+        )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           <label style={{ fontSize: "0.9rem" }}>
@@ -241,9 +230,13 @@ function App() {
             <input
               type="number"
               value={formData.amount}
+              placeholder="金額を入力"
               style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
               onChange={(e) =>
-                setFormData({ ...formData, amount: Number(e.target.value) })
+                setFormData({
+                  ...formData,
+                  amount: e.target.value === "" ? "" : Number(e.target.value),
+                })
               }
             />
           </label>
@@ -288,12 +281,12 @@ function App() {
               opacity: loading ? 0.6 : 1,
             }}
           >
-            {loading ? "保存中..." : "保存する"}
+            {loading ? "処理中..." : "保存する"}
           </button>
         </div>
       </section>
 
-      {/* 履歴セクション */}
+      {/* 履歴リスト */}
       <section>
         <h3
           style={{
@@ -307,19 +300,17 @@ function App() {
         {expenses.filter((ex) => ex.date === selectedDateStr).length > 0 ? (
           expenses
             .filter((ex) => ex.date === selectedDateStr)
-            .map((ex, index) => (
+            .map((ex, i) => (
               <div
-                key={index}
+                key={i}
                 style={{
                   background: "#fff",
                   padding: "10px",
                   marginBottom: "8px",
                   borderRadius: "8px",
-                  fontSize: "0.9rem",
                   display: "flex",
                   justifyContent: "space-between",
                   border: "1px solid #eee",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
                 }}
               >
                 <div>
@@ -335,7 +326,7 @@ function App() {
             ))
         ) : (
           <p style={{ fontSize: "0.8rem", color: "#999", textAlign: "center" }}>
-            この日の記録はありません
+            記録なし
           </p>
         )}
       </section>
