@@ -1,17 +1,25 @@
 import { useState, useEffect } from "react";
 import Calendar from "react-calendar";
+import type { CalendarProps } from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "./App.css"; // CSSファイルをインポート
 import dayjs from "dayjs";
 import "dayjs/locale/ja";
 import { analyzeReceipt } from "./lib/gemini";
 import { supabase } from "./supabaseClient.ts";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 // dayjsを日本語設定に
 dayjs.locale("ja");
 
 // 型定義
-type CalendarValue = Date | null | [Date | null, Date | null];
+interface Expense {
+  id: string;
+  date: string;
+  amount: number;
+  shop_name: string;
+  category: string;
+}
 
 interface FormData {
   amount: number | "";
@@ -21,9 +29,9 @@ interface FormData {
 
 function App() {
   // --- ステート管理 ---
-  const [date, setDate] = useState<CalendarValue>(new Date());
+  const [date, setDate] = useState<CalendarProps["value"]>(new Date());
   const [loading, setLoading] = useState(false);
-  const [expenses, setExpenses] = useState<any[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [formData, setFormData] = useState<FormData>({
     amount: "",
     shop_name: "",
@@ -38,7 +46,7 @@ function App() {
   // --- 1. 起動時・ログイン状態監視 ---
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (_event: AuthChangeEvent, session: Session | null) => {
         if (session) {
           fetchExpenses();
         }
@@ -73,7 +81,7 @@ function App() {
 
     const { data, error } = await supabase
       .from("expenses")
-      .select("*")
+      .select("id, date, amount, shop_name, category")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -99,9 +107,13 @@ function App() {
       });
       if (result.date) setDate(new Date(result.date));
       alert("AI解析が完了しました！内容を確認して保存してください。");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(error);
-      alert("解析に失敗しました。");
+      if (error instanceof Error) {
+        alert("解析に失敗しました。: " + error.message);
+      } else {
+        alert("解析に失敗しました。");
+      }
     } finally {
       setLoading(false);
     }
@@ -136,8 +148,12 @@ function App() {
       fetchExpenses();
       setFormData({ amount: "", shop_name: "", category: "食費" });
       alert("保存しました！");
-    } catch (error: any) {
-      alert("保存エラー: " + error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert("保存エラー: " + error.message);
+      } else {
+        alert("不明な保存エラーが発生しました。");
+      }
     } finally {
       setLoading(false);
     }
@@ -154,9 +170,31 @@ function App() {
 
       // 削除に成功したらリストを再取得
       fetchExpenses();
-    } catch (error: any) {
-      alert("削除エラー: " + error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert("削除エラー: " + error.message);
+      } else {
+        alert("不明な削除エラーが発生しました。");
+      }
     }
+  };
+
+  const tileContent: CalendarProps["tileContent"] = ({ date, view }) => {
+    if (view !== "month") return null;
+    const hasData = expenses.some(
+      (ex) => ex.date === dayjs(date).format("YYYY-MM-DD")
+    );
+    return hasData ? (
+      <div
+        style={{
+          color: "#007bff",
+          fontSize: "10px",
+          textAlign: "center",
+        }}
+      >
+        ●
+      </div>
+    ) : null;
   };
 
   return (
@@ -184,27 +222,11 @@ function App() {
             }}
           >
             <Calendar
-              onChange={(value) => setDate(value as CalendarValue)}
+              onChange={setDate}
               value={date}
               locale="ja-JP"
               formatDay={(_, date) => dayjs(date).format("D")}
-              tileContent={({ date, view }) => {
-                if (view !== "month") return null;
-                const hasData = expenses.some(
-                  (ex) => ex.date === dayjs(date).format("YYYY-MM-DD")
-                );
-                return hasData ? (
-                  <div
-                    style={{
-                      color: "#007bff",
-                      fontSize: "10px",
-                      textAlign: "center",
-                    }}
-                  >
-                    ●
-                  </div>
-                ) : null;
-              }}
+              tileContent={tileContent}
             />
           </section>
 
