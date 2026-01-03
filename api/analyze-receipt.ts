@@ -59,7 +59,7 @@ export default async function handler(
       - shop_name (店名)
       - category (食費、日用品、交通費、交際費、その他のいずれか)
 
-      出力は必ず純粋なJSON形式のみとしてください。マークダウンのバッククォート(\`\\`\)などは含めないでください。
+      出力は必ず純粋なJSON形式のみとしてください。マークダウンのバッククォートは含めないでください。
     `;
 
     const imagePart = {
