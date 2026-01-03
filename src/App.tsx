@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+import "./App.css"; // CSSファイルをインポート
 import dayjs from "dayjs";
 import "dayjs/locale/ja";
 import { analyzeReceipt } from "./lib/gemini";
@@ -34,11 +35,10 @@ function App() {
     Array.isArray(date) ? date[0] : (date as Date)
   ).format("YYYY-MM-DD");
 
-  // --- 1. 起動時・ログイン状態監視ロジック ---
+  // --- 1. 起動時・ログイン状態監視 ---
   useEffect(() => {
-    // ログイン状態の変化を監視（リロード時もこれでデータ取得が走る）
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event, session) => {
         if (session) {
           fetchExpenses();
         }
@@ -53,7 +53,7 @@ function App() {
         const { error } = await supabase.auth.signInAnonymously();
         if (error) console.error("ログインエラー:", error.message);
       } else {
-        fetchExpenses(); // すでにセッションがあれば取得
+        fetchExpenses();
       }
     };
 
@@ -75,7 +75,7 @@ function App() {
       .from("expenses")
       .select("*")
       .eq("user_id", user.id)
-      .order("date", { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("データ取得エラー:", error);
@@ -98,7 +98,7 @@ function App() {
         category: result.category || "食費",
       });
       if (result.date) setDate(new Date(result.date));
-      alert("AIによる解析が成功しました！");
+      alert("AI解析が完了しました！内容を確認して保存してください。");
     } catch (error) {
       console.error(error);
       alert("解析に失敗しました。");
@@ -133,9 +133,9 @@ function App() {
       ]);
 
       if (error) throw error;
-      alert("保存しました！");
-      fetchExpenses(); // リストとドットを更新
+      fetchExpenses();
       setFormData({ amount: "", shop_name: "", category: "食費" });
+      alert("保存しました！");
     } catch (error: any) {
       alert("保存エラー: " + error.message);
     } finally {
@@ -143,16 +143,24 @@ function App() {
     }
   };
 
+  // --- 5. 削除ハンドラー ---
+  const handleDelete = async (id: string) => {
+    if (!confirm("この記録を削除してもよろしいですか？")) return;
+
+    try {
+      const { error } = await supabase.from("expenses").delete().eq("id", id);
+
+      if (error) throw error;
+
+      // 削除に成功したらリストを再取得
+      fetchExpenses();
+    } catch (error: any) {
+      alert("削除エラー: " + error.message);
+    }
+  };
+
   return (
-    <div
-      style={{
-        maxWidth: "500px",
-        margin: "0 auto",
-        padding: "20px",
-        fontFamily: "sans-serif",
-        color: "#333",
-      }}
-    >
+    <div className="app-container">
       <header>
         <h1
           style={{
@@ -165,171 +173,234 @@ function App() {
         </h1>
       </header>
 
-      {/* カレンダー */}
-      <section
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          marginBottom: "20px",
-        }}
-      >
-        <Calendar
-          onChange={(value) => setDate(value as CalendarValue)}
-          value={date}
-          locale="ja-JP"
-          formatDay={(_, date) => dayjs(date).format("D")}
-          tileContent={({ date, view }) => {
-            if (view !== "month") return null;
-            const hasData = expenses.some(
-              (ex) => ex.date === dayjs(date).format("YYYY-MM-DD")
-            );
-            return hasData ? (
-              <div
+      <div className="main-content">
+        <div className="left-column">
+          {/* カレンダー */}
+          <section
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              marginBottom: "20px",
+            }}
+          >
+            <Calendar
+              onChange={(value) => setDate(value as CalendarValue)}
+              value={date}
+              locale="ja-JP"
+              formatDay={(_, date) => dayjs(date).format("D")}
+              tileContent={({ date, view }) => {
+                if (view !== "month") return null;
+                const hasData = expenses.some(
+                  (ex) => ex.date === dayjs(date).format("YYYY-MM-DD")
+                );
+                return hasData ? (
+                  <div
+                    style={{
+                      color: "#007bff",
+                      fontSize: "10px",
+                      textAlign: "center",
+                    }}
+                  >
+                    ●
+                  </div>
+                ) : null;
+              }}
+            />
+          </section>
+
+          {/* 履歴リスト */}
+          <section>
+            <h3
+              style={{
+                fontSize: "1rem",
+                borderBottom: "1px solid #eee",
+                paddingBottom: "5px",
+              }}
+            >
+              選択した日の履歴
+            </h3>
+            {expenses.filter((ex) => ex.date === selectedDateStr).length > 0 ? (
+              expenses
+                .filter((ex) => ex.date === selectedDateStr)
+                .map((ex) => (
+                  <div
+                    key={ex.id}
+                    style={{
+                      background: "#fff",
+                      padding: "10px",
+                      marginBottom: "8px",
+                      borderRadius: "8px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      border: "1px solid #eee",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: "bold" }}>{ex.shop_name}</div>
+                      <div style={{ fontSize: "0.75rem", color: "#888" }}>
+                        {ex.category} / {ex.amount.toLocaleString()}円
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(ex.id)}
+                      style={{
+                        background: "#ff4d4f",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        padding: "5px 10px",
+                        fontSize: "0.7rem",
+                        cursor: "pointer",
+                        marginLeft: "10px",
+                      }}
+                    >
+                      削除
+                    </button>
+                  </div>
+                ))
+            ) : (
+              <p
                 style={{
-                  color: "#007bff",
-                  fontSize: "10px",
+                  fontSize: "0.8rem",
+                  color: "#999",
                   textAlign: "center",
                 }}
               >
-                ●
-              </div>
-            ) : null;
-          }}
-        />
-      </section>
-
-      {/* 入力フォーム */}
-      <section
-        style={{
-          background: "#f9f9f9",
-          padding: "20px",
-          borderRadius: "12px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          marginBottom: "20px",
-        }}
-      >
-        <h2 style={{ fontSize: "1.1rem", marginTop: 0 }}>経費を入力</h2>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          disabled={loading}
-          style={{ width: "100%", marginBottom: "15px" }}
-        />
-        {loading && (
-          <p style={{ color: "#007bff", fontSize: "0.9rem" }}>✨ AI解析中...</p>
-        )}
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <label style={{ fontSize: "0.9rem" }}>
-            日付:{" "}
-            <strong>{dayjs(selectedDateStr).format("YYYY年MM月DD日")}</strong>
-          </label>
-          <label style={{ fontSize: "0.9rem" }}>
-            金額 (円):
-            <input
-              type="number"
-              value={formData.amount}
-              placeholder="金額を入力"
-              style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  amount: e.target.value === "" ? "" : Number(e.target.value),
-                })
-              }
-            />
-          </label>
-          <label style={{ fontSize: "0.9rem" }}>
-            店名:
-            <input
-              type="text"
-              value={formData.shop_name}
-              style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
-              onChange={(e) =>
-                setFormData({ ...formData, shop_name: e.target.value })
-              }
-            />
-          </label>
-          <label style={{ fontSize: "0.9rem" }}>
-            カテゴリ:
-            <select
-              value={formData.category}
-              style={{ width: "100%", padding: "8px" }}
-              onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
-              }
-            >
-              <option>食費</option>
-              <option>日用品</option>
-              <option>交通費</option>
-              <option>交際費</option>
-              <option>その他</option>
-            </select>
-          </label>
-          <button
-            onClick={handleSave}
-            disabled={loading}
+                記録なし
+              </p>
+            )}
+          </section>
+        </div>
+        <div className="right-column">
+          {/* 入力フォーム */}
+          <section
             style={{
-              marginTop: "10px",
-              padding: "12px",
-              background: "#333",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              opacity: loading ? 0.6 : 1,
+              background: "#f9f9f9",
+              padding: "20px",
+              borderRadius: "12px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
             }}
           >
-            {loading ? "処理中..." : "保存する"}
-          </button>
-        </div>
-      </section>
+            <h2 style={{ fontSize: "1.1rem", marginTop: 0 }}>経費を入力</h2>
 
-      {/* 履歴リスト */}
-      <section>
-        <h3
-          style={{
-            fontSize: "1rem",
-            borderBottom: "1px solid #eee",
-            paddingBottom: "5px",
-          }}
-        >
-          選択した日の履歴
-        </h3>
-        {expenses.filter((ex) => ex.date === selectedDateStr).length > 0 ? (
-          expenses
-            .filter((ex) => ex.date === selectedDateStr)
-            .map((ex, i) => (
+            <div
+              style={{
+                marginBottom: "20px",
+                fontSize: "1.1rem",
+                textAlign: "center",
+                background: "white",
+                padding: "10px",
+                borderRadius: "8px",
+              }}
+            >
+              <strong>
+                {dayjs(selectedDateStr).format("YYYY年MM月DD日")}
+              </strong>
+            </div>
+
+            {/* 領収書から入力 */}
+            <div className="input-section">
+              <h3>領収書から入力</h3>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                disabled={loading}
+                style={{ width: "100%" }}
+              />
+              {loading && (
+                <p style={{ color: "#007bff", fontSize: "0.9rem" }}>
+                  ✨ AI解析中...
+                </p>
+              )}
+            </div>
+
+            {/* 手動で入力 */}
+            <div className="input-section">
+              <h3>手動で入力</h3>
               <div
-                key={i}
                 style={{
-                  background: "#fff",
-                  padding: "10px",
-                  marginBottom: "8px",
-                  borderRadius: "8px",
                   display: "flex",
-                  justifyContent: "space-between",
-                  border: "1px solid #eee",
+                  flexDirection: "column",
+                  gap: "12px",
                 }}
               >
-                <div>
-                  <div style={{ fontWeight: "bold" }}>{ex.shop_name}</div>
-                  <div style={{ fontSize: "0.75rem", color: "#888" }}>
-                    {ex.category}
-                  </div>
-                </div>
-                <div style={{ fontWeight: "bold", color: "#d63031" }}>
-                  {ex.amount.toLocaleString()}円
-                </div>
+                <label style={{ fontSize: "0.9rem" }}>
+                  金額 (円):
+                  <input
+                    type="number"
+                    value={formData.amount}
+                    placeholder="金額を入力"
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      boxSizing: "border-box",
+                    }}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        amount:
+                          e.target.value === "" ? "" : Number(e.target.value),
+                      })
+                    }
+                  />
+                </label>
+                <label style={{ fontSize: "0.9rem" }}>
+                  店名:
+                  <input
+                    type="text"
+                    value={formData.shop_name}
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      boxSizing: "border-box",
+                    }}
+                    onChange={(e) =>
+                      setFormData({ ...formData, shop_name: e.target.value })
+                    }
+                  />
+                </label>
+                <label style={{ fontSize: "0.9rem" }}>
+                  カテゴリ:
+                  <select
+                    value={formData.category}
+                    style={{ width: "100%", padding: "8px" }}
+                    onChange={(e) =>
+                      setFormData({ ...formData, category: e.target.value })
+                    }
+                  >
+                    <option>食費</option>
+                    <option>日用品</option>
+                    <option>交通費</option>
+                    <option>交際費</option>
+                    <option>その他</option>
+                  </select>
+                </label>
               </div>
-            ))
-        ) : (
-          <p style={{ fontSize: "0.8rem", color: "#999", textAlign: "center" }}>
-            記録なし
-          </p>
-        )}
-      </section>
+            </div>
+
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              style={{
+                marginTop: "20px",
+                width: "100%",
+                padding: "12px",
+                background: "#333",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                opacity: loading ? 0.6 : 1,
+              }}
+            >
+              {loading ? "処理中..." : "この内容で保存する"}
+            </button>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

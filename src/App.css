@@ -1,0 +1,42 @@
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: sans-serif;
+  color: #333;
+}
+
+.main-content {
+  display: block;
+}
+
+@media (min-width: 768px) {
+  .main-content {
+    display: flex;
+    gap: 20px;
+  }
+  .left-column {
+    flex: 1; /* これにより、利用可能なスペースの50%を占めます */
+    width: 50%; /* 明示的に50%に設定 */
+  }
+  .right-column {
+    flex: 1; /* これにより、利用可能なスペースの50%を占めます */
+    width: 50%; /* 明示的に50%に設定 */
+  }
+}
+
+.input-section {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 20px;
+}
+
+.input-section h3 {
+  margin-top: 0;
+  font-size: 1rem;
+  color: #555;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
