@@ -1,4 +1,4 @@
-import React, { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import Calendar from 'react-calendar';
 import type { CalendarProps } from 'react-calendar';
 import dayjs from 'dayjs';

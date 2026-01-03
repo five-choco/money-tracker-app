@@ -38,6 +38,33 @@
 -   **CI/CD**:
     -   GitHub Actions
 
+## プロジェクトの構造
+
+主要なディレクトリとファイルの役割です。
+
+```
+.
+├── api/                  # Vercelサーバーレス関数
+│   └── analyze-receipt.ts  # Gemini APIを呼び出すバックエンド処理
+├── public/               # 静的ファイル
+├── src/
+│   ├── components/       # Reactコンポーネント
+│   │   ├── CalendarSection.tsx
+│   │   ├── ExpenseForm.tsx
+│   │   ├── Header.tsx
+│   │   ├── HistoryList.tsx
+│   │   └── index.ts      # コンポーネントの再エクスポート
+│   ├── lib/
+│   │   └── gemini.ts     # バックエンドAPIを呼び出すクライアント側関数
+│   ├── App.css           # グローバルなスタイル
+│   ├── App.tsx           # アプリケーションのメインコンポーネント
+│   ├── main.tsx          # アプリケーションのエントリーポイント
+│   └── types.ts          # 共有の型定義
+├── .env.example          # 環境変数のテンプレート
+├── package.json          # プロジェクトの依存関係とスクリプト
+└── vite.config.ts        # ViteとVitestの設定
+```
+
 ## セットアップ方法
 
 ### 1. リポジトリをクローン

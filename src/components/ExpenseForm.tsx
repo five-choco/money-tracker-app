@@ -1,4 +1,4 @@
-import React, { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import dayjs from 'dayjs';
 import type { FormData } from '../types';
 
