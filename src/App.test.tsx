@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import App from './App';
-import { beforeEach, describe, expect, it, vi, Mocked } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import * as SupabaseClientModule from './supabaseClient'; // Import as a module
 
 // Mock the entire module './supabaseClient'
