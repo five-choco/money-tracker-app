@@ -317,14 +317,12 @@ function App() {
                 borderRadius: "8px",
               }}
             >
-              <strong>
-                {dayjs(selectedDateStr).format("YYYY年MM月DD日")}
-              </strong>
+              <strong>{dayjs(selectedDateStr).format("YYYY年MM月DD日")}</strong>
             </div>
 
             {/* 領収書から入力 */}
             <div className="input-section">
-              <h3>領収書から入力</h3>
+              <h3>領収書から読み取る</h3>
               <input
                 type="file"
                 accept="image/*"
