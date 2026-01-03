@@ -1,3 +1,4 @@
+/* General Layout */
 .app-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -10,19 +11,46 @@
   display: block;
 }
 
-@media (min-width: 768px) {
-  .main-content {
-    display: flex;
-    gap: 20px;
-  }
-  .left-column {
-    flex: 1; /* これにより、利用可能なスペースの50%を占めます */
-    width: 50%; /* 明示的に50%に設定 */
-  }
-  .right-column {
-    flex: 1; /* これにより、利用可能なスペースの50%を占めます */
-    width: 50%; /* 明示的に50%に設定 */
-  }
+/* Header */
+.app-header {
+  font-size: 1.5rem;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Calendar Section */
+.calendar-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.calendar-tile-content {
+  color: #007bff;
+  font-size: 10px;
+  text-align: center;
+}
+
+/* Expense Form Section */
+.form-section {
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.form-section__title {
+  font-size: 1.1rem;
+  margin-top: 0;
+}
+
+.form-section__date-display {
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+  text-align: center;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
 }
 
 .input-section {
@@ -39,4 +67,113 @@
   border-bottom: 1px solid #eee;
   padding-bottom: 10px;
   margin-bottom: 15px;
+}
+
+.form-section__file-input {
+  width: 100%;
+}
+
+.form-section__loading-text {
+  color: #007bff;
+  font-size: 0.9rem;
+}
+
+.form-section__manual-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-section__label {
+  font-size: 0.9rem;
+}
+
+.form-section__input,
+.form-section__select {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.form-section__save-button {
+  margin-top: 20px;
+  width: 100%;
+  padding: 12px;
+  background: #333;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.form-section__save-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+/* History List Section */
+.history-section__title {
+  font-size: 1rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+.history-list__item {
+  background: #fff;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #eee;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.history-list__item-details {
+  flex: 1;
+}
+
+.history-list__item-shop {
+  font-weight: bold;
+}
+
+.history-list__item-meta {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.history-list__delete-button {
+  background: #ff4d4f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.history-list__no-records {
+  font-size: 0.8rem;
+  color: #999;
+  text-align: center;
+}
+
+
+/* Responsive Layout */
+@media (min-width: 768px) {
+  .main-content {
+    display: flex;
+    gap: 20px;
+  }
+  .left-column {
+    flex: 1;
+    width: 50%;
+  }
+  .right-column {
+    flex: 1;
+    width: 50%;
+  }
 }
