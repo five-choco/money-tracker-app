@@ -1,74 +1,94 @@
-# React + TypeScript + Vite
+# AI領収書カレンダー
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+レシートの写真をアップロードするだけで、AIが内容を解析し、カレンダーに支出を記録してくれるアプリケーションです。
 
-Currently, two official plugins are available:
+## 概要
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+このアプリケーションは、日々の面倒な支出管理を簡略化することを目的としています。ユーザーは受け取ったレシートをスマートフォンで撮影し、その画像をアップロードするだけで、AIが自動的に「日付」「金額」「店名」「カテゴリ」を抽出し、入力フォームに反映します。内容を確認して保存するだけで、カレンダーに支出が記録されていきます。
 
-## React Compiler
+## 主な機能
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+-   **AIによるレシート解析**:
+    -   アップロードされたレシート画像をGoogle Gemini APIが解析します。
+    -   日付、金額、店名、カテゴリを自動で抽出します。
+-   **カレンダー形式での支出管理**:
+    -   支出を記録した日に印が表示され、一目で支出があった日が分かります。
+    -   日付を選択すると、その日の支出履歴を一覧で確認できます。
+-   **支出の手動登録・編集・削除**:
+    -   AI解析後、内容を修正して保存できます。
+    -   もちろん、レシートがなくても手動で支出を登録できます。
+-   **レスポンシブデザイン**:
+    -   PCでもスマートフォンでも見やすいレイアウトに対応しています。
 
-## Expanding the ESLint configuration
+## 使用技術
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+このプロジェクトで使用されている主な技術は以下の通りです。
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+-   **フロントエンド**:
+    -   React 19
+    -   TypeScript
+    -   Vite
+-   **バックエンドサービス (BaaS)**:
+    -   Supabase (データベース、匿名認証)
+-   **AI**:
+    -   Google Gemini API (gemini-1.5-flash)
+-   **テスト**:
+    -   Vitest
+    -   React Testing Library
+-   **CI/CD**:
+    -   GitHub Actions
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## セットアップ方法
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1. リポジトリをクローン
+
+```bash
+git clone https://github.com/<YOUR_USERNAME>/<YOUR_REPOSITORY>.git
+cd <YOUR_REPOSITORY>
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. 環境変数の設定
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+プロジェクトのルートディレクトリに`.env.local`という名前のファイルを作成し、`.env.example`を参考に以下の内容を記述してください。
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```plaintext
+# .env.local
+
+# Supabase
+VITE_SUPABASE_URL="YOUR_SUPABASE_URL"
+VITE_SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY"
+
+# Google Gemini API
+VITE_GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
 ```
-# money-tracker-app
+
+-   `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` は、Supabaseのプロジェクト設定ページから取得できます。
+-   `VITE_GEMINI_API_KEY` は、Google AI Studioで取得したAPIキーを設定してください。
+
+### 3. 依存関係のインストール
+
+```bash
+npm install
+```
+
+### 4. 開発サーバーの起動
+
+```bash
+npm run dev
+```
+
+ブラウザで `http://localhost:5173` にアクセスすると、アプリケーションが表示されます。
+
+## 利用可能なスクリプト
+
+`package.json` に定義されている主なスクリプトです。
+
+| スクリプト         | 説明                                                               |
+| :----------------- | :----------------------------------------------------------------- |
+| `npm run dev`      | 開発サーバーを起動します。                                         |
+| `npm run build`    | 本番用にプロジェクトをビルドします（型チェックも同時に実行）。     |
+| `npm run lint`     | ESLintを実行し、コードの静的解析を行います。                       |
+| `npm test`         | Vitestを実行し、ユニットテスト・結合テストを一度だけ実行します。   |
+| `npm test:ui`      | VitestのUIモードでテストを起動します。                             |
+| `npm run coverage` | テストのカバレッジレポートを生成します。                           |
+| `npm run preview`  | ビルド後の本番用ファイルをローカルでプレビューします。             |
