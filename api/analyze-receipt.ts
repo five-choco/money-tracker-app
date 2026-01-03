@@ -48,7 +48,7 @@ export default async function handler(
     }
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-pro-vision",
+      model: "gemini-1.5-flash",
       safetySettings,
     });
 
